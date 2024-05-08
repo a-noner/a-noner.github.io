@@ -1,1 +1,60 @@
-hello world
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5天倒计时</title>
+    <style>
+        #countdown {
+            font-size: 2em;
+            text-align: center;
+            margin-top: 20%;
+        }
+    </style>
+</head>
+<body>
+    <div id="countdown"></div>
+
+    <script>
+        function padZero(num) {
+            return num < 10 ? '0' + num : num;
+        }
+
+        function countdown(targetDate) {
+            var now = new Date().getTime();
+            var distance = targetDate - now;
+
+            // 倒计时结束，重置为5天后
+            if (distance < 0) {
+                var newTargetDate = new Date();
+                newTargetDate.setDate(newTargetDate.getDate() + 5);
+                targetDate = newTargetDate.getTime();
+                distance = targetDate - now;
+            }
+
+            var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById('countdown').textContent = 
+                padZero(days) + "天 " + 
+                padZero(hours) + "时 " + 
+                padZero(minutes) + "分 " + 
+                padZero(seconds) + "秒 ";
+
+            // 每秒更新一次
+            var timer = setInterval(function() {
+                countdown(targetDate);
+            }, 1000);
+        }
+
+        // 设置初始目标日期为现在时间后的5天
+        var targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + 5);
+
+        // 开始倒计时
+        countdown(targetDate);
+    </script>
+</body>
+</html>
