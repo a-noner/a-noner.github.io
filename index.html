@@ -1,40 +1,64 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <title>Ntime</title></title>
-  <script>
-    function show_date_time() {
-      const BirthDay = new Date("2024/5/4");
-      const today = new Date();
-      const timeold = today.getTime() - BirthDay.getTime();
-      const sectimeold = timeold / 1000;
-      const msPerDay = 1000 * 60 * 60 * 24;
-      const daysold = Math.floor(timeold / msPerDay);
-      const e_hrsold = (timeold % msPerDay) / (1000 * 60 * 60);
-      const hrsold = Math.floor(e_hrsold);
-      const e_minsold = (e_hrsold - hrsold) * 60;
-      const minsold = Math.floor(e_minsold);
-      const seconds = Math.floor((e_minsold - minsold) * 60);
-      let color = 'black';
-      if (daysold % 4 === 0) {
-        color = 'red';
-      }
-      const momkElement = document.getElementById('momk');
-      momkElement.style.color = color;
-      momkElement.innerHTML = `${daysold}天${hrsold}小时${minsold}分${seconds}秒`;
-      setTimeout(show_date_time, 1000);
+<head> 
+<meta charset="UTF-8"> 
+<title>Ntime</title> 
+<style>body {
+    transform: scale(8);
+    transform-origin: 0 0;
+}</style>
+<script> 
+function show_date_time() { 
+    // 初始化目标日期和当前日期 
+    const BirthDay = new Date("2024/5/4"); 
+    const today = new Date();
+    
+    // 计算时间差 
+    const timeold = today.getTime() - BirthDay.getTime(); 
+    const sectimeold = timeold / 1000; 
+    const msPerDay = 1000 * 60 * 60 * 24;
+    
+    // 计算剩余的天数、小时、分钟和秒 
+    const daysold = Math.floor(timeold / msPerDay); 
+    const e_hrsold = (timeold % msPerDay) / (1000 * 60 * 60); 
+    const hrsold = Math.floor(e_hrsold); 
+    const e_minsold = (e_hrsold - hrsold) * 60; 
+    const minsold = Math.floor(e_minsold); 
+    const seconds = Math.floor((e_minsold - minsold) * 60);
+    
+    // 计算下次变红的时间
+    const nextRed = (4 - (daysold % 4)) * msPerDay - (timeold % msPerDay);
+    const nextRedDays = Math.floor(nextRed / msPerDay);
+    const nextRedHours = Math.floor((nextRed % msPerDay) / (1000 * 60 * 60));
+    const nextRedMins = Math.floor(((nextRed % msPerDay) % (1000 * 60 * 60)) / (1000 * 60));
+    const nextRedSecs = Math.floor((((nextRed % msPerDay) % (1000 * 60 * 60)) % (1000 * 60)) / 1000);
+    
+    // 检查天数是否为4的倍数，并相应地设置文本颜色 
+    let color = 'black'; // 默认颜色设置为黑色 
+    if (daysold % 4 === 0) { 
+        color = 'red'; // 如果是4的倍数，则设置为红色 
     }
-    window.onload = show_date_time;
-  </script>
-  <style>
-    body, html {
-      margin: 0;
+    
+    // 更新页面上的显示 
+    const momkElement = document.getElementById('momk'); 
+    momkElement.style.color = color; // 设置文本颜色 
+    momkElement.innerHTML = `present ：${daysold}/${hrsold}/${minsold}/${seconds}<br>
+                             remaind：${nextRedDays}/${nextRedHours}/${nextRedMins}/${nextRedSecs}`;
+    
+    // 递归调用，每秒更新一次 
+    setTimeout(show_date_time, 1000); 
+}
 
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
+// 页面加载完成后开始计时 
+window.onload = show_date_time; 
+</script>
+</head>
+<body> 
+<h1>running：</h1> 
+<span id="momk"></span>
+<!-- 如果需要，可以在这里添加其他HTML内容 --> 
+</body>
+</html>  <meta charset="UTF-8">
   <title>Ntime</title></title>
   <script>
     function show_date_time() {
