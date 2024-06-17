@@ -5,51 +5,10 @@
     <title>Ntime</title>
     <!-- Google Analytics Code -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-41CR6MDPEP"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-41CR6MDPEP');
-    </script>
-    <script>
-        function show_date_time() {
-            // 初始化目标日期和当前日期
-            const BirthDay = new Date("2024/5/3");
-            const today = new Date();
-
-            // 计算时间差
-            const timeold = today.getTime() - BirthDay.getTime();
-            const msPerDay = 1000 * 60 * 60 * 24;
-
-            // 计算剩余的天数、小时、分钟和秒
-            const daysold = Math.floor(timeold / msPerDay);
-            const e_hrsold = (timeold % msPerDay) / (1000 * 60 * 60);
-            const hrsold = Math.floor(e_hrsold);
-            const e_minsold = (e_hrsold - hrsold) * 60;
-            const minsold = Math.floor(e_minsold);
-            const seconds = Math.floor((e_minsold - minsold) * 60);
-
-            // 检查天数是否为4的倍数，并相应地设置文本颜色
-            let color = 'black'; // 默认颜色设置为黑色
-            if (daysold % 4 === 0) {
-                color = 'red'; // 如果是4的倍数，则设置为红色
-            }
-
-            // 更新页面上的显示
-            const momkElement = document.getElementById('momk');
-            momkElement.style.color = color; // 设置文本颜色
-            momkElement.innerHTML = `${daysold}/${hrsold}/${minsold}/${seconds}`;
-
-            // 递归调用，每秒更新一次
-            setTimeout(show_date_time, 1000);
-        }
-
-        // 页面加载完成后开始计时
-        window.onload = show_date_time;
-    </script>
+    
 </head>
 <body>
-<span id="momk"></span>
+<h1>hello</h1>
 <!-- 如果需要，可以在这里添加其他HTML内容 -->
 </body>
 </html>
