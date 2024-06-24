@@ -4,15 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clash部署助手</title>
-<!-- Google tag (gtag.js) -->
+    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-41CR6MDPEP"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-41CR6MDPEP');
-</script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-41CR6MDPEP');
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,6 +19,7 @@
             padding: 20px;
             background-color: #f4f4f9;
             color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         h1, h2 {
             color: #0056b3;
@@ -43,20 +43,136 @@
         a:hover {
             background-color: #ced4da;
         }
+        .footer {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .dark-mode {
+            background-color: #333;
+            color: #f4f4f9;
+        }
+        .dark-mode a {
+            background-color: #444;
+            color: #f4f4f9;
+        }
+        .dark-mode a:hover {
+            background-color: #555;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .title-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+        }
+        .title-container h1 {
+            margin: 0;
+        }
+    .divider {
+        margin: 20px 0;
+        border-bottom: 1px solid #ccc;
+    }        
     </style>
 </head>
 <body>
+    <div class="header">
+        <label class="switch">
+            <input type="checkbox" id="darkModeToggle" onclick="toggleDarkMode()">
+            <span class="slider"></span>
+        </label>
+        <div class="title-container">
+            <h1>N的小猫咪</h1>
+        </div>
+    <div class="divider"></div>    
+    </div>
     <h2>软件下载链接</h2>
     <ul>
-        <li><a href="https://github.com/MetaCubeX/ClashMetaForAndroid/releases/download/v2.10.1/cmfa-2.10.1-meta-arm64-v8a-release.apk" download>下载 ClashMeta 64位</a></li>
-        <li><a href="https://github.com/MetaCubeX/ClashMetaForAndroid/releases/download/v2.10.1/cmfa-2.10.1-meta-armeabi-v7a-release.apk" download>下载 ClashMeta 32位</a></li>
+        <li><a href="https://github.com/MetaCubeX/ClashMetaForAndroid/releases/download/v2.10.1/cmfa-2.10.1-meta-arm64-v8a-release.apk" download>下载 ClashMeta</a></li>
+        <li><a href="https://github.com/MetaCubeX/ClashMetaForAndroid/releases/download/v2.10.1/cmfa-2.10.1-meta-armeabi-v7a-release.apk" download>下载 ClashMeta（备用）</a></li>
         <li><a href="https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v1.6.6/Clash.Verge_1.6.6_x64-setup.exe" download>下载 Clash for Windows</a></li>
     </ul>
-
     <h2>一键导入URL</h2>
     <ul>
-        <li><a href="clash://install-config?url=https%3A%2F%2Fapi.v1.mk%2Fsub%3Ftarget%3Dclash%26url%3Dhttps%253A%252F%252Fghproxy.com%252Fhttps%253A%252F%252Fraw.githubusercontent.com%252Fyaney01%252FYaney01%252Fmain%252Ftemporary%26insert%3Dfalse%26config%3Dhttps%253A%252F%252Fraw.githubusercontent.com%252FACL4SSR%252FACL4SSR%252Fmaster%252FClash%252Fconfig%252FACL4SSR_Online_Mini_Fallback.ini%26emoji%3Dtrue%26list%3Dfalse%26xudp%3Dfalse%26udp%3Dfalse%26tfo%3Dfalse%26expand%3Dtrue%26scv%3Dfalse%26fdn%3Dfalse%26new_name%3Dtrue">🔗未解gpt</a></li>
-        <li><a href="clash://install-config?url=http%3A%2F%2Fdy.hpyjc.top%2Fapi%2Fv1%2Fclient%2Fsubscribe%3Ftoken%3D92bdec5903ce1fecf2795b0d9d2912a7">🔗已解gpt</a></li>
+        <li><a href="clash://install-config?url=https%3A%2F%2Fapi.v1.mk%2Fsub%3Ftarget%3Dclash%26url%3Dhttps%253A%252F%252Fghproxy.com%252Fhttps%253A%252F%252Fraw.githubusercontent.com%252Fyaney01%252FYaney01%252Fmain%252Ftemporary%26insert%3Dfalse%26config%3Dhttps%253A%252F%252Fraw.githubusercontent.com%252FACL4SSR%252FACL4SSR%252Fmaster%252FClash%252Fconfig%252FACL4SSR_Online_Mini_Fallback.ini%26emoji%3Dtrue%26list%3Dfalse%26xudp%3Dfalse%26udp%3Dfalse%26tfo%3Dfalse%26expand%3Dtrue%26scv%3Dfalse%26fdn%3Dfalse%26new_name%3Dtrue">🔗节点</a></li>
+        <li><a href="clash://install-config?url=http%3A%2F%2Fdy.hpyjc.top%2Fapi%2Fv1%2Fclient%2Fsubscribe%3Ftoken%3D92bdec5903ce1fecf2795b0d9d2912a7">🔗备用</a></li>
     </ul>
+    <h2>测试链接</h2>
+    <ul>
+        <li><a href="https://www.youtube.com" target="_blank">YouTube</a></li>
+        <li><a href="https://www.google.com" target="_blank">Google</a></li>
+        <li><a href="https://www.wikipedia.org" target="_blank">维基百科</a></li>
+    </ul>
+    <div class="footer">
+        <p>本站由<a href="me.html">我</a>和<a href="https://www.openai.com" target="_blank">ChatGPT</a>合作完成</p>
+    </div>
+    <script>
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+        }
+
+        // Persist dark mode preference
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const toggle = document.getElementById('darkModeToggle');
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            toggle.checked = isDarkMode;
+        });
+
+        document.getElementById('darkModeToggle').addEventListener('change', (event) => {
+            localStorage.setItem('darkMode', event.target.checked);
+        });
+    </script>
 </body>
 </html>
