@@ -49,6 +49,7 @@
             background-color: #e9ecef;
             border-radius: 5px;
             text-align: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         .footer a {
             color: #007bff;
@@ -67,6 +68,10 @@
         }
         .dark-mode a:hover {
             background-color: #555;
+        }
+        .dark-mode .footer {
+            background-color: #444;
+            color: #f4f4f9;
         }
         .switch {
             position: relative;
@@ -120,10 +125,10 @@
         .title-container h1 {
             margin: 0;
         }
-    .divider {
-        margin: 20px 0;
-        border-bottom: 1px solid #ccc;
-    }        
+        .divider {
+            margin: 20px 0;
+            border-bottom: 1px solid #ccc;
+        }
     </style>
 </head>
 <body>
@@ -135,7 +140,7 @@
         <div class="title-container">
             <h1>N的小猫咪</h1>
         </div>
-    <div class="divider"></div>    
+        <div class="divider"></div>
     </div>
     <h2>软件下载链接</h2>
     <ul>
@@ -155,7 +160,7 @@
         <li><a href="https://www.wikipedia.org" target="_blank">维基百科</a></li>
     </ul>
     <div class="footer">
-        <p>本站由<a href="http://user.qzone.qq.com/1952755413">我</a>和<a href="https://www.openai.com" target="_blank">ChatGPT</a>合作完成</p>
+        <p>本站由<a href="#" id="my-qq">我</a>和<a href="https://www.openai.com" target="_blank">ChatGPT</a>合作完成</p>
     </div>
     <script>
         function toggleDarkMode() {
@@ -172,6 +177,17 @@
 
         document.getElementById('darkModeToggle').addEventListener('change', (event) => {
             localStorage.setItem('darkMode', event.target.checked);
+        });
+
+        // Copy QQ number to clipboard
+        document.getElementById('my-qq').addEventListener('click', (event) => {
+            event.preventDefault();
+            const qqNumber = '1952755413';
+            navigator.clipboard.writeText(qqNumber).then(() => {
+                alert('QQ号已复制: ' + qqNumber);
+            }).catch(err => {
+                console.error('无法复制QQ号', err);
+            });
         });
     </script>
 </body>
