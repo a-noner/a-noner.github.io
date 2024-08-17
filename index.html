@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Days Since August 1, 2024 (API)</title>
+    <title>Days Since August 1, 2024</title>
     <style>
-        .red { color: red; }
+        /* 添加CSS样式，用于改变文本颜色 */
+        .red {
+            color: red;
+        }
     </style>
 </head>
 <body>
@@ -12,16 +15,26 @@
     <p id="daysCount">Loading...</p>
 
     <script>
-        fetch('/days-since')
-            .then(response => response.json())
-            .then(data => {
-                const daysCountParagraph = document.getElementById('daysCount');
-                daysCountParagraph.textContent = `Days since August 1, 2024: ${data.days}`;
-                if (data.isMultipleOfFour) {
-                    daysCountParagraph.classList.add('red');
-                }
-            })
-            .catch(error => console.error('Error fetching data:', error));
+        // 设置开始日期
+        var startDate = new Date(2024, 7, 1); // 月份是从0开始的，所以7代表8月
+
+        // 获取当前日期
+        var currentDate = new Date();
+
+        // 计算两个日期之间的天数差异
+        var differenceInTime = currentDate - startDate;
+
+        // 将毫秒转换为天数
+        var differenceInDays = Math.floor(differenceInTime / (1000 * 60 * 60 * 24));
+
+        // 检查天数是否是4的倍数
+        if (differenceInDays % 4 === 0) {
+            // 如果是4的倍数，设置文本为红色
+            document.getElementById("daysCount").className = "red";
+        }
+
+        // 显示结果
+        document.getElementById("daysCount").textContent = "Days since August 1, 2024: " + differenceInDays;
     </script>
 </body>
 </html>
