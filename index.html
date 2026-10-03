@@ -1,508 +1,159 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>本地文本总结 - 1B小模型</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: #0f1117;
-      color: #e1e4ea;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 16px;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 800px;
-    }
-
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #fff;
-    }
-
-    .subtitle {
-      font-size: 0.85rem;
-      color: #8b92a5;
-      margin-bottom: 24px;
-    }
-
-    /* 模型加载状态 */
-    .status-bar {
-      background: #1a1d27;
-      border: 1px solid #2a2e3a;
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.85rem;
-    }
-
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #f59e0b;
-      flex-shrink: 0;
-      animation: pulse 1.5s infinite;
-    }
-
-    .status-dot.ready {
-      background: #10b981;
-      animation: none;
-    }
-
-    .status-dot.error {
-      background: #ef4444;
-      animation: none;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    .progress-bar {
-      flex: 1;
-      height: 6px;
-      background: #2a2e3a;
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #6366f1, #8b5cf6);
-      border-radius: 3px;
-      transition: width 0.3s ease;
-    }
-
-    .status-text {
-      color: #8b92a5;
-      white-space: nowrap;
-      font-size: 0.8rem;
-    }
-
-    /* 输入区 */
-    .input-section {
-      margin-bottom: 20px;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 200px;
-      background: #1a1d27;
-      border: 1px solid #2a2e3a;
-      border-radius: 10px;
-      padding: 16px;
-      color: #e1e4ea;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      resize: vertical;
-      outline: none;
-      transition: border-color 0.2s;
-      font-family: inherit;
-    }
-
-    textarea:focus {
-      border-color: #6366f1;
-    }
-
-    textarea::placeholder {
-      color: #5a6178;
-    }
-
-    .char-count {
-      text-align: right;
-      font-size: 0.75rem;
-      color: #5a6178;
-      margin-top: 4px;
-    }
-
-    /* 按钮 */
-    .btn-row {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    button {
-      flex: 1;
-      padding: 14px 20px;
-      border: none;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-family: inherit;
-    }
-
-    #summarizeBtn {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: #fff;
-    }
-
-    #summarizeBtn:hover:not(:disabled) {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-
-    #summarizeBtn:disabled {
-      background: #2a2e3a;
-      color: #5a6178;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    #clearBtn {
-      background: #1a1d27;
-      color: #8b92a5;
-      border: 1px solid #2a2e3a;
-      flex: 0 0 auto;
-      padding: 14px 24px;
-    }
-
-    #clearBtn:hover {
-      background: #22262f;
-      color: #e1e4ea;
-    }
-
-    /* 输出区 */
-    .output-section {
-      margin-top: 8px;
-    }
-
-    .output-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .output-header h2 {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #8b92a5;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    #copyBtn {
-      background: none;
-      border: 1px solid #2a2e3a;
-      color: #8b92a5;
-      padding: 6px 14px;
-      border-radius: 6px;
-      font-size: 0.78rem;
-      cursor: pointer;
-      flex: 0 0 auto;
-      transition: all 0.2s;
-    }
-
-    #copyBtn:hover {
-      border-color: #6366f1;
-      color: #a5b4fc;
-    }
-
-    #output {
-      background: #1a1d27;
-      border: 1px solid #2a2e3a;
-      border-radius: 10px;
-      padding: 18px;
-      min-height: 120px;
-      font-size: 0.95rem;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    #output.empty {
-      color: #5a6178;
-      font-style: italic;
-    }
-
-    .cursor-blink {
-      display: inline-block;
-      width: 2px;
-      height: 1em;
-      background: #6366f1;
-      vertical-align: text-bottom;
-      animation: blink 0.8s step-end infinite;
-      margin-left: 2px;
-    }
-
-    @keyframes blink {
-      50% { opacity: 0; }
-    }
-
-    /* 提示 */
-    .hint {
-      margin-top: 20px;
-      padding: 14px 18px;
-      background: #13161e;
-      border: 1px solid #1e222d;
-      border-radius: 10px;
-      font-size: 0.8rem;
-      color: #5a6178;
-      line-height: 1.6;
-    }
-
-    .hint strong {
-      color: #8b92a5;
-    }
-
-    /* 响应式 */
-    @media (max-width: 500px) {
-      h1 { font-size: 1.2rem; }
-      textarea { min-height: 150px; }
-      .btn-row { flex-direction: column; }
-      #clearBtn { flex: 1; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebLLM 功能测试 - SmolLM2-135M</title>
+<style>
+  body { font-family: monospace; background: #111; color: #0f0; padding: 16px; font-size: 13px; }
+  h2 { color: #fff; font-size: 14px; margin: 12px 0 6px; }
+  #log { background: #000; border: 1px solid #333; padding: 10px; height: 400px; overflow-y: auto;
+         white-space: pre-wrap; word-break: break-all; line-height: 1.5; }
+  .info  { color: #0f0; }
+  .warn  { color: #ff0; }
+  .error { color: #f44; }
+  .ok    { color: #0ff; font-weight: bold; }
+  button { padding: 8px 16px; margin: 6px 6px 6px 0; cursor: pointer;
+           background: #222; color: #0f0; border: 1px solid #0f0; font-family: monospace; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  #output { background: #000; border: 1px solid #333; padding: 10px; min-height: 60px;
+            white-space: pre-wrap; color: #fff; margin-top: 6px; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>📝 本地文本总结</h1>
-    <p class="subtitle">基于 WebLLM + WebGPU · 1B 小模型 · 数据不出浏览器</p>
 
-    <!-- 模型加载状态 -->
-    <div class="status-bar">
-      <div class="status-dot" id="statusDot"></div>
-      <div class="progress-bar">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-      <div class="status-text" id="statusText">正在初始化...</div>
-    </div>
+<h2>📋 日志</h2>
+<div id="log"></div>
 
-    <!-- 输入 -->
-    <div class="input-section">
-      <textarea id="inputText" placeholder="在此粘贴需要总结的文本...&#10;&#10;支持中文、英文，建议控制在 3000 字以内以获得最佳效果。"></textarea>
-      <div class="char-count" id="charCount">0 字</div>
-    </div>
+<h2>🧪 测试输入</h2>
+<textarea id="input" rows="3" style="width:100%;background:#000;color:#0f0;
+  border:1px solid #333;padding:8px;font-family:monospace;">请用一句话解释什么是人工智能。</textarea>
 
-    <!-- 按钮 -->
-    <div class="btn-row">
-      <button id="summarizeBtn" disabled>开始总结</button>
-      <button id="clearBtn">清空</button>
-    </div>
+<h2>🚀 操作</h2>
+<button id="btnRun" disabled>生成</button>
+<button id="btnClear">清空日志</button>
 
-    <!-- 输出 -->
-    <div class="output-section">
-      <div class="output-header">
-        <h2>总结结果</h2>
-        <button id="copyBtn" style="display:none;">复制</button>
-      </div>
-      <div id="output" class="empty">等待模型加载完成后，输入文本并点击“开始总结”...</div>
-    </div>
+<h2>📤 输出</h2>
+<div id="output">等待模型加载...</div>
 
-    <!-- 使用提示 -->
-    <div class="hint">
-      <strong>使用说明：</strong>首次加载需下载约 700MB 模型文件（仅第一次），之后会缓存在浏览器中。请使用 <strong>Chrome 113+ 或 Edge 113+</strong>，并确保已启用 WebGPU。推理速度取决于设备 GPU 性能。
-    </div>
-  </div>
+<script type="module">
+import * as webllm from "https://esm.run/@mlc-ai/web-llm@0.2.84";
 
-  <!-- 引入 WebLLM -->
-  <script type="module">
-    import * as webllm from "https://esm.run/@mlc-ai/web-llm@0.2.79";
+const MODEL_ID = "SmolLM2-135M-Instruct-q0f16-MLC";
+const logEl   = document.getElementById("log");
+const outEl   = document.getElementById("output");
+const btnRun  = document.getElementById("btnRun");
+const inputEl = document.getElementById("input");
 
-    // ====== 配置 ======
-    // 1B 模型，约 712MB，适合简单总结任务
-    const MODEL_ID = "SmolLM2-135M-Instruct-q0f16-MLC";
+/* ---------- 日志函数：同时写入屏幕和 console ---------- */
+function log(msg, type = "info") {
+  const time = new Date().toLocaleTimeString();
+  const line = `[${time}] ${msg}`;
+  const div = document.createElement("div");
+  div.className = type;
+  div.textContent = line;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+  (type === "error" ? console.error : console.log)(line);
+}
 
-    // 总结的系统提示词
-    const SYSTEM_PROMPT = `你是一个专业的文本总结助手。请用简洁、准确的语言总结用户提供的文本。
+/* ---------- 捕获全局错误 ---------- */
+window.onerror = (msg, src, line, col) => {
+  log(`全局错误: ${msg} (${src}:${line}:${col})`, "error");
+  return false;
+};
+window.onunhandledrejection = (e) => {
+  log(`未处理的 Promise 拒绝: ${e.reason}`, "error");
+};
 
-要求：
-1. 提取核心观点和关键信息
-2. 使用中文输出
-3. 控制在 3-5 句话以内
-4. 不要添加原文中没有的内容
-5. 直接输出总结，不要加"总结："等前缀`;
+/* ---------- 检查 WebGPU ---------- */
+if (!navigator.gpu) {
+  log("❌ 浏览器不支持 WebGPU，无法运行 WebLLM。", "error");
+  outEl.textContent = "不支持 WebGPU";
+  throw new Error("WebGPU not supported");
+}
+log("✅ WebGPU 可用。", "ok");
 
-    // ====== DOM 元素 ======
-    const statusDot = document.getElementById("statusDot");
-    const progressFill = document.getElementById("progressFill");
-    const statusText = document.getElementById("statusText");
-    const inputText = document.getElementById("inputText");
-    const charCount = document.getElementById("charCount");
-    const summarizeBtn = document.getElementById("summarizeBtn");
-    const clearBtn = document.getElementById("clearBtn");
-    const outputEl = document.getElementById("output");
-    const copyBtn = document.getElementById("copyBtn");
+/* ---------- 手动注册模型 ---------- */
+const appConfig = {
+  model_list: [{
+    model: `https://huggingface.co/mlc-ai/${MODEL_ID}`,
+    model_id: MODEL_ID,
+    model_lib: webllm.modelLibURLPrefix + webllm.modelVersion +
+               "/SmolLM2-135M-Instruct-q0f16-ctx2k_cs1k-webgpu.wasm",
+  }],
+  cacheBackend: "indexeddb",   // 绕开 Cache API 网络错误
+};
 
-    // ====== 状态 ======
-    let engine = null;
-    let isGenerating = false;
+log(`模型 ID: ${MODEL_ID}`);
+log(`model_lib: ${appConfig.model_list[0].model_lib}`);
+log("开始创建引擎...");
 
-    // ====== 字符计数 ======
-    inputText.addEventListener("input", () => {
-      const len = inputText.value.length;
-      charCount.textContent = `${len} 字`;
+/* ---------- 创建引擎（带详细日志） ---------- */
+async function init() {
+  try {
+    const engine = await webllm.CreateMLCEngine(MODEL_ID, {
+      appConfig,
+      logLevel: "INFO",
+      initProgressCallback: (report) => {
+        const pct = (report.progress * 100).toFixed(1);
+        log(`加载进度 ${pct}% | ${report.text}`);
+      },
     });
 
-    // ====== 初始化模型 ======
-    async function initModel() {
-      try {
-        statusText.textContent = "正在加载模型...";
+    log("✅ 引擎创建成功，模型就绪。", "ok");
+    outEl.textContent = "模型就绪，点击“生成”测试。";
+    btnRun.disabled = false;
 
-        engine = await webllm.CreateMLCEngine(MODEL_ID, {
-          initProgressCallback: (report) => {
-            const pct = Math.round(report.progress * 100);
-            progressFill.style.width = `${pct}%`;
+    /* ---------- 绑定生成按钮 ---------- */
+    btnRun.addEventListener("click", async () => {
+      const prompt = inputEl.value.trim();
+      if (!prompt) { log("输入为空。", "warn"); return; }
 
-            if (report.text.includes("Loading model from cache")) {
-              statusText.textContent = "从缓存加载模型...";
-            } else if (report.text.includes("Fetching param cache")) {
-              statusText.textContent = `下载模型参数... ${pct}%`;
-            } else if (report.text.includes("Loading GPU shader modules")) {
-              statusText.textContent = "编译 GPU 着色器...";
-            } else {
-              statusText.textContent = `加载中... ${pct}%`;
-            }
-          },
-        });
+      btnRun.disabled = true;
+      outEl.textContent = "";
+      log(`开始生成，输入: "${prompt}"`);
 
-        // 加载完成
-        statusDot.classList.add("ready");
-        progressFill.style.width = "100%";
-        statusText.textContent = "模型就绪 ✓";
-        summarizeBtn.disabled = false;
-        outputEl.textContent = "模型已就绪。输入文本后点击“开始总结”。";
-        outputEl.classList.add("empty");
-
-      } catch (err) {
-        console.error("模型加载失败:", err);
-        statusDot.classList.add("error");
-        statusText.textContent = "模型加载失败";
-        outputEl.textContent = `加载失败：${err.message}\n\n请确认：\n1. 使用 Chrome/Edge 113+\n2. 已启用 WebGPU\n3. 网络连接正常`;
-        outputEl.classList.remove("empty");
-      }
-    }
-
-    // ====== 文本总结 ======
-    async function summarize() {
-      const text = inputText.value.trim();
-      if (!text) {
-        outputEl.textContent = "请先输入需要总结的文本。";
-        outputEl.classList.add("empty");
-        return;
-      }
-
-      if (text.length > 8000) {
-        outputEl.textContent = "文本过长（超过 8000 字），请精简后再试。";
-        outputEl.classList.remove("empty");
-        return;
-      }
-
-      if (!engine) {
-        outputEl.textContent = "模型尚未加载完成，请稍候...";
-        return;
-      }
-
-      // 进入生成状态
-      isGenerating = true;
-      summarizeBtn.disabled = true;
-      summarizeBtn.textContent = "总结中...";
-      copyBtn.style.display = "none";
-      outputEl.textContent = "";
-      outputEl.classList.remove("empty");
-
-      // 显示闪烁光标
-      const cursor = document.createElement("span");
-      cursor.className = "cursor-blink";
-      outputEl.appendChild(cursor);
-
-      let fullText = "";
-
+      let full = "";
       try {
         const reply = await engine.chat.completions.create({
           messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: text },
+            { role: "system", content: "你是一个简洁的助手，用一句话回答。" },
+            { role: "user", content: prompt },
           ],
           temperature: 0.3,
-          max_tokens: 512,
+          max_tokens: 128,
           stream: true,
         });
 
         for await (const chunk of reply) {
           const delta = chunk.choices[0]?.delta?.content || "";
-          fullText += delta;
-          // 更新输出，保留光标
-          outputEl.textContent = fullText;
-          outputEl.appendChild(cursor.cloneNode());
+          if (delta) {
+            full += delta;
+            outEl.textContent = full;
+          }
         }
-
-        // 生成完成
-        outputEl.textContent = fullText;
-        copyBtn.style.display = "inline-block";
-
+        log("✅ 生成完成。", "ok");
+        log(`输出长度: ${full.length} 字符`);
       } catch (err) {
-        console.error("总结失败:", err);
-        outputEl.textContent = `生成失败：${err.message}`;
+        log(`❌ 生成失败: ${err.message || err}`, "error");
       } finally {
-        isGenerating = false;
-        summarizeBtn.disabled = false;
-        summarizeBtn.textContent = "开始总结";
-      }
-    }
-
-    // ====== 清空 ======
-    function clearAll() {
-      if (isGenerating) return;
-      inputText.value = "";
-      charCount.textContent = "0 字";
-      outputEl.textContent = "等待模型加载完成后，输入文本并点击“开始总结”...";
-      outputEl.classList.add("empty");
-      copyBtn.style.display = "none";
-    }
-
-    // ====== 复制 ======
-    async function copyOutput() {
-      const text = outputEl.textContent;
-      if (!text) return;
-      try {
-        await navigator.clipboard.writeText(text);
-        copyBtn.textContent = "已复制 ✓";
-        setTimeout(() => { copyBtn.textContent = "复制"; }, 1500);
-      } catch {
-        copyBtn.textContent = "复制失败";
-        setTimeout(() => { copyBtn.textContent = "复制"; }, 1500);
-      }
-    }
-
-    // ====== 事件绑定 ======
-    summarizeBtn.addEventListener("click", summarize);
-    clearBtn.addEventListener("click", clearAll);
-    copyBtn.addEventListener("click", copyOutput);
-
-    // 快捷键 Ctrl/Cmd + Enter 触发总结
-    inputText.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        if (!summarizeBtn.disabled) summarize();
+        btnRun.disabled = false;
       }
     });
 
-    // ====== 启动 ======
-    initModel();
-  </script>
+  } catch (err) {
+    log(`❌ 引擎创建失败: ${err.message || err}`, "error");
+    log(`错误详情: ${JSON.stringify(err, null, 2)}`, "error");
+    outEl.textContent = `加载失败: ${err.message || err}`;
+  }
+}
+
+document.getElementById("btnClear").addEventListener("click", () => {
+  logEl.innerHTML = "";
+});
+
+init();
+</script>
 </body>
 </html>
