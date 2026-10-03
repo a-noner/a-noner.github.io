@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WebLLM 功能测试 - SmolLM2-135M</title>
+<title>WebLLM 功能测试 - SmolLM2-135M (CDN)</title>
 <style>
   body { font-family: monospace; background: #111; color: #0f0; padding: 16px; font-size: 13px; }
   h2 { color: #fff; font-size: 14px; margin: 12px 0 6px; }
@@ -45,7 +45,7 @@ const outEl   = document.getElementById("output");
 const btnRun  = document.getElementById("btnRun");
 const inputEl = document.getElementById("input");
 
-/* ---------- 日志函数：同时写入屏幕和 console ---------- */
+/* ---------- 日志函数 ---------- */
 function log(msg, type = "info") {
   const time = new Date().toLocaleTimeString();
   const line = `[${time}] ${msg}`;
@@ -57,7 +57,7 @@ function log(msg, type = "info") {
   (type === "error" ? console.error : console.log)(line);
 }
 
-/* ---------- 捕获全局错误 ---------- */
+/* ---------- 全局错误捕获 ---------- */
 window.onerror = (msg, src, line, col) => {
   log(`全局错误: ${msg} (${src}:${line}:${col})`, "error");
   return false;
@@ -74,22 +74,26 @@ if (!navigator.gpu) {
 }
 log("✅ WebGPU 可用。", "ok");
 
-/* ---------- 手动注册模型 ---------- */
+/* ---------- 手动注册模型：model_lib 改用 jsDelivr CDN ---------- */
+const MODEL_LIB_URL =
+  "https://cdn.jsdelivr.net/gh/mlc-ai/binary-mlc-llm-libs@main/" +
+  "web-llm-models/v0_2_84/base/" +
+  "SmolLM2-135M-Instruct-q0f16-ctx2k_cs1k-webgpu.wasm";
+
 const appConfig = {
   model_list: [{
     model: `https://huggingface.co/mlc-ai/${MODEL_ID}`,
     model_id: MODEL_ID,
-    model_lib: webllm.modelLibURLPrefix + webllm.modelVersion +
-               "/SmolLM2-135M-Instruct-q0f16-ctx2k_cs1k-webgpu.wasm",
+    model_lib: MODEL_LIB_URL,
   }],
-  cacheBackend: "indexeddb",   // 绕开 Cache API 网络错误
+  cacheBackend: "indexeddb",
 };
 
 log(`模型 ID: ${MODEL_ID}`);
-log(`model_lib: ${appConfig.model_list[0].model_lib}`);
+log(`model_lib (CDN): ${MODEL_LIB_URL}`);
 log("开始创建引擎...");
 
-/* ---------- 创建引擎（带详细日志） ---------- */
+/* ---------- 创建引擎 ---------- */
 async function init() {
   try {
     const engine = await webllm.CreateMLCEngine(MODEL_ID, {
@@ -105,7 +109,6 @@ async function init() {
     outEl.textContent = "模型就绪，点击“生成”测试。";
     btnRun.disabled = false;
 
-    /* ---------- 绑定生成按钮 ---------- */
     btnRun.addEventListener("click", async () => {
       const prompt = inputEl.value.trim();
       if (!prompt) { log("输入为空。", "warn"); return; }
