@@ -1,0 +1,12 @@
+HTTrack3.50-4 launched on Sat, 03 Oct 2026 11:03:32 at https://shizuku.rikka.app/ +*.png +*.gif +*.jpg +*.jpeg +*.css +*.js -ad.doubleclick.net/* -mime:application/foobar
+(httrack -O /storage/emulated/0/HTTrack/Websites/1 https://shizuku.rikka.app/ +*.png +*.gif +*.jpg +*.jpeg +*.css +*.js -ad.doubleclick.net/* -mime:application/foobar -%k -%P -%F "<!-- Mirrored from {url} by HTTrack Website Copier/3.x [XR&CO], {date} -->" -%l zh,* -u1 -s2 -%s -%u -%f -D -a -K0 -H0 -p3 -N0 )
+
+Information, Warnings and Errors reported for this mirror:
+note:	the hts-log.txt file, and hts-cache folder, may contain sensitive information,
+	such as username/password authentication for websites mirrored in this project
+	do not share these files/folders if you want these information to remain private
+
+
+HTTrack Website Copier/3.50-4 mirror complete in 1 minutes 18 seconds : 58 links scanned, 57 files written (1598367 bytes overall) [1177819 bytes received at 15100 bytes/sec], 1599000 bytes transferred using HTTP compression in 58 files, ratio 60%, 18.2 requests per connection
+(No errors, 0 warnings, 0 messages)
+(Some links above the start directory were not mirrored. Pass -B (--can-go-up-and-down) to mirror them.)
