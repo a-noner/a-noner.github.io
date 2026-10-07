@@ -1,162 +1,895 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WebLLM 功能测试 - SmolLM2-135M (CDN)</title>
-<style>
-  body { font-family: monospace; background: #111; color: #0f0; padding: 16px; font-size: 13px; }
-  h2 { color: #fff; font-size: 14px; margin: 12px 0 6px; }
-  #log { background: #000; border: 1px solid #333; padding: 10px; height: 400px; overflow-y: auto;
-         white-space: pre-wrap; word-break: break-all; line-height: 1.5; }
-  .info  { color: #0f0; }
-  .warn  { color: #ff0; }
-  .error { color: #f44; }
-  .ok    { color: #0ff; font-weight: bold; }
-  button { padding: 8px 16px; margin: 6px 6px 6px 0; cursor: pointer;
-           background: #222; color: #0f0; border: 1px solid #0f0; font-family: monospace; }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
-  #output { background: #000; border: 1px solid #333; padding: 10px; min-height: 60px;
-            white-space: pre-wrap; color: #fff; margin-top: 6px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>普通加载 vs 流式加载 · 图片性能对比</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #f5f7fb;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      padding: 2rem 1.5rem;
+      color: #1e293b;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-weight: 600;
+      font-size: 1.9rem;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    h1 small {
+      font-size: 1rem;
+      font-weight: 400;
+      background: #e2e8f0;
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      color: #334155;
+    }
+
+    .subhead {
+      color: #475569;
+      margin-bottom: 2rem;
+      border-left: 4px solid #94a3b8;
+      padding-left: 1rem;
+    }
+
+    /* 对比卡片区域 */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.8rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 28px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #e9eef3;
+      transition: box-shadow 0.2s;
+    }
+
+    .card:hover {
+      box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+      padding: 1.2rem 1.5rem;
+      background: #ffffff;
+      border-bottom: 1px solid #eef2f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.7rem;
+      border-radius: 50px;
+      background: #eef2ff;
+      color: #4f46e5;
+    }
+
+    .badge.stream {
+      background: #ecfdf5;
+      color: #059669;
+    }
+
+    /* 图片展示区 */
+    .image-stage {
+      background: #f8fafc;
+      background-image: radial-gradient(#cbd5e1 0.8px, transparent 0.8px);
+      background-size: 20px 20px;
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.2rem;
+      position: relative;
+      transition: background 0.2s;
+    }
+
+    .image-wrapper {
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 4 / 3;
+      background: #eef2f6;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+      border: 1px solid #dee7ef;
+      position: relative;
+    }
+
+    .image-wrapper img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity 0.25s ease;
+      opacity: 1;
+    }
+
+    /* 流式加载时，图片逐步渲染，opacity 不变，但会慢慢绘制 */
+
+    /* 占位符文案 */
+    .placeholder-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: #64748b;
+      font-size: 0.9rem;
+      font-weight: 500;
+      width: 100%;
+      height: 100%;
+      background: #f1f5f9;
+    }
+
+    .placeholder-text span {
+      font-size: 2rem;
+      opacity: 0.6;
+    }
+
+    /* 加载进度 / 状态 */
+    .load-status {
+      padding: 0.9rem 1.5rem 1.1rem;
+      background: #ffffff;
+      border-top: 1px solid #ecf1f7;
+      font-size: 0.9rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.8rem;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+    }
+
+    .stat-label {
+      color: #64748b;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-weight: 700;
+      font-size: 1.1rem;
+      font-variant-numeric: tabular-nums;
+      color: #0f172a;
+    }
+
+    .stat-value.time {
+      color: #0f172a;
+      min-width: 4.2rem;
+    }
+
+    .stat-value.streamed-bytes {
+      color: #059669;
+    }
+
+    .status-indicator {
+      font-size: 0.8rem;
+      padding: 0.2rem 0.8rem;
+      border-radius: 50px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .status-indicator.idle {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .status-indicator.loading {
+      background: #fff7ed;
+      color: #c2410c;
+    }
+
+    .status-indicator.done {
+      background: #e6f7ec;
+      color: #0b5e42;
+    }
+
+    /* 全局控制按钮 */
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin: 1.5rem 0 2rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: white;
+      border: 1px solid #cfddee;
+      padding: 0.85rem 2rem;
+      border-radius: 60px;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #1e293b;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.15s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .btn-primary {
+      background: #1e293b;
+      border-color: #1e293b;
+      color: white;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: #0f172a;
+      border-color: #0f172a;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .footnote {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: #62748c;
+      border-top: 1px solid #dce5ef;
+      padding-top: 2rem;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* 进度条（用于流式） */
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: #10b981;
+      border-radius: 10px;
+      transition: width 0.1s linear;
+    }
+
+    /* 响应式 */
+    @media (max-width: 850px) {
+      .compare-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      body {
+        padding: 1.5rem 1rem;
+      }
+
+      h1 {
+        font-size: 1.6rem;
+      }
+    }
+  </style>
 </head>
 <body>
+<div class="container">
+  <h1>
+    ⚡ 图片加载对比
+    <small>普通 vs 流式</small>
+  </h1>
+  <div class="subhead">
+    普通加载：等待完整图片下载后才一次性渲染。流式加载：使用 Fetch API 读取字节流，逐块解码并渐进绘制。点击下方按钮开始测试。
+  </div>
 
-<h2>📋 日志</h2>
-<div id="log"></div>
+  <!-- 左右对比卡片 -->
+  <div class="compare-grid">
+    <!-- 普通加载卡片 -->
+    <div class="card">
+      <div class="card-header">
+        <h2>
+          <span>🐢 普通加载</span>
+        </h2>
+        <span class="badge">整图下载 · 一次性渲染</span>
+      </div>
+      <div class="image-stage">
+        <div class="image-wrapper" id="normalWrapper">
+          <!-- 图片或占位符会动态渲染 -->
+          <div class="placeholder-text" id="normalPlaceholder">
+            <span>🖼️</span>
+            等待加载
+          </div>
+        </div>
+      </div>
+      <div class="load-status">
+        <div class="stat-row">
+          <div class="stat-item">
+            <span class="stat-label">耗时</span>
+            <span class="stat-value time" id="normalTime">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">状态</span>
+            <span class="status-indicator idle" id="normalStatus">空闲</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">已接收</span>
+          <span class="stat-value" id="normalBytes">0 KB</span>
+        </div>
+      </div>
+    </div>
 
-<h2>🧪 测试输入</h2>
-<textarea id="input" rows="3" style="width:100%;background:#000;color:#0f0;
-  border:1px solid #333;padding:8px;font-family:monospace;">请用一句话解释什么是人工智能。</textarea>
+    <!-- 流式加载卡片 -->
+    <div class="card">
+      <div class="card-header">
+        <h2>
+          <span>🌊 流式加载</span>
+        </h2>
+        <span class="badge stream">Fetch Stream · 渐进渲染</span>
+      </div>
+      <div class="image-stage">
+        <div class="image-wrapper" id="streamWrapper">
+          <div class="placeholder-text" id="streamPlaceholder">
+            <span>📡</span>
+            等待流
+          </div>
+        </div>
+      </div>
+      <div class="load-status">
+        <div class="stat-row">
+          <div class="stat-item">
+            <span class="stat-label">耗时</span>
+            <span class="stat-value time" id="streamTime">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">状态</span>
+            <span class="status-indicator idle" id="streamStatus">空闲</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">已接收</span>
+          <span class="stat-value streamed-bytes" id="streamBytes">0 KB</span>
+        </div>
+      </div>
+      <!-- 流式进度条 -->
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="streamProgress"></div>
+      </div>
+    </div>
+  </div>
 
-<h2>🚀 操作</h2>
-<button id="btnRun" disabled>生成</button>
-<button id="btnClear">清空日志</button>
+  <!-- 控制按钮 -->
+  <div class="actions">
+    <button class="btn btn-primary" id="startBtn">
+      ▶ 开始对比加载
+    </button>
+    <button class="btn" id="resetBtn">
+      ↺ 重置
+    </button>
+  </div>
 
-<h2>📤 输出</h2>
-<div id="output">等待模型加载...</div>
+  <div class="footnote">
+    ⚙️ 说明：为了演示清晰，流式加载使用 <code>fetch</code> 读取 <code>ReadableStream</code>，每收到一个数据块就更新一次图片（通过 Blob URL）。<br>
+    普通加载则使用传统的 <code>img.src</code>，浏览器会等待完整图片下载完毕再渲染。下方时间数据基于当前网络环境，首次点击可能受缓存影响。
+  </div>
+</div>
 
-<script type="module">
-import * as webllm from "https://esm.run/@mlc-ai/web-llm@0.2.84";
+<script>
+  (function() {
+    // ---------- 配置 ----------
+    // 使用一张较大的图片 (1024x768 左右，约 200KB+)，确保流式加载有可感知的过程
+    // 使用 Picsum 的固定图片 ID，保证确定性 (也会随机缓存问题，但加时间戳可绕过)
 
-const MODEL_ID = "SmolLM2-135M-Instruct-q0f16-MLC";
-const logEl   = document.getElementById("log");
-const outEl   = document.getElementById("output");
-const btnRun  = document.getElementById("btnRun");
-const inputEl = document.getElementById("input");
 
-/* ---------- 日志函数 ---------- */
-function log(msg, type = "info") {
-  const time = new Date().toLocaleTimeString();
-  const line = `[${time}] ${msg}`;
-  const div = document.createElement("div");
-  div.className = type;
-  div.textContent = line;
-  logEl.appendChild(div);
-  logEl.scrollTop = logEl.scrollHeight;
-  (type === "error" ? console.error : console.log)(line);
-}
 
-/* ---------- 全局错误捕获 ---------- */
-window.onerror = (msg, src, line, col) => {
-  log(`全局错误: ${msg} (${src}:${line}:${col})`, "error");
-  return false;
-};
-window.onunhandledrejection = (e) => {
-  log(`未处理的 Promise 拒绝: ${e.reason}`, "error");
-};
 
-/* ---------- 检查 WebGPU ---------- */
-if (!navigator.gpu) {
-  log("❌ 浏览器不支持 WebGPU，无法运行 WebLLM。", "error");
-  outEl.textContent = "不支持 WebGPU";
-  throw new Error("WebGPU not supported");
-}
-log("✅ WebGPU 可用。", "ok");
 
-/* ---------- 手动注册模型：model_lib 改用 jsDelivr CDN ---------- */
-const MODEL_LIB_URL =
-  "https://cdn.jsdelivr.net/gh/mlc-ai/binary-mlc-llm-libs@main/" +
-  "web-llm-models/v0_2_84/base/" +
-  "SmolLM2-135M-Instruct-q0f16-ctx2k_cs1k-webgpu.wasm";
 
-const appConfig = {
-  model_list: [{
-    model: `https://huggingface.co/mlc-ai/${MODEL_ID}`,
-    model_id: MODEL_ID,
-    model_lib: MODEL_LIB_URL,
-  }],
-  cacheBackend: "indexeddb",
-};
 
-log(`模型 ID: ${MODEL_ID}`);
-log(`model_lib (CDN): ${MODEL_LIB_URL}`);
-log("开始创建引擎...");
 
-/* ---------- 创建引擎 ---------- */
-async function init() {
-  try {
-    const engine = await webllm.CreateMLCEngine(MODEL_ID, {
-      appConfig,
-      logLevel: "INFO",
-      initProgressCallback: (report) => {
-        const pct = (report.progress * 100).toFixed(1);
-        log(`加载进度 ${pct}% | ${report.text}`);
-      },
-    });
 
-    log("✅ 引擎创建成功，模型就绪。", "ok");
-    outEl.textContent = "模型就绪，点击“生成”测试。";
-    btnRun.disabled = false;
 
-    btnRun.addEventListener("click", async () => {
-      const prompt = inputEl.value.trim();
-      if (!prompt) { log("输入为空。", "warn"); return; }
 
-      btnRun.disabled = true;
-      outEl.textContent = "";
-      log(`开始生成，输入: "${prompt}"`);
 
-      let full = "";
-      try {
-        const reply = await engine.chat.completions.create({
-          messages: [
-            { role: "system", content: "你是一个简洁的助手，用一句话回答。" },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.3,
-          max_tokens: 128,
-          stream: true,
-        });
 
-        for await (const chunk of reply) {
-          const delta = chunk.choices[0]?.delta?.content || "";
-          if (delta) {
-            full += delta;
-            outEl.textContent = full;
-          }
-        }
-        log("✅ 生成完成。", "ok");
-        log(`输出长度: ${full.length} 字符`);
-      } catch (err) {
-        log(`❌ 生成失败: ${err.message || err}`, "error");
-      } finally {
-        btnRun.disabled = false;
+
+
+
+
+    const IMAGE_URL = 'https://uapis.cn/api/v1/image/bing-daily?resolution=4k';
+    // 带随机参数防止缓存，保证每次都是新鲜下载 (stream 和 normal 都加)
+    // 但为了公平，可以加相同的随机串；每次点击生成一个新的随机后缀
+    let currentCacheBuster = Date.now();
+
+    // ---------- DOM 元素 ----------
+    const normalWrapper = document.getElementById('normalWrapper');
+    const streamWrapper = document.getElementById('streamWrapper');
+    const normalTimeEl = document.getElementById('normalTime');
+    const streamTimeEl = document.getElementById('streamTime');
+    const normalStatusEl = document.getElementById('normalStatus');
+    const streamStatusEl = document.getElementById('streamStatus');
+    const normalBytesEl = document.getElementById('normalBytes');
+    const streamBytesEl = document.getElementById('streamBytes');
+    const streamProgress = document.getElementById('streamProgress');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // ---------- 状态 ----------
+    let normalStartTime = 0;
+    let streamStartTime = 0;
+    let normalImageElement = null;
+    let streamImageElement = null;
+    let streamAbortController = null;
+    let isRunning = false;
+
+    // 存储对象URL便于释放
+    let currentStreamBlobUrl = null;
+
+    // ---------- 辅助函数 ----------
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 KB';
+      const kb = bytes / 1024;
+      if (kb < 1000) return kb.toFixed(1) + ' KB';
+      return (kb / 1024).toFixed(2) + ' MB';
+    }
+
+    function setStatus(element, text, type = 'idle') {
+      element.textContent = text;
+      element.className = 'status-indicator ' + type;
+    }
+
+    // 重置视图到初始状态
+    function resetView() {
+      // 取消进行中的流
+      if (streamAbortController) {
+        streamAbortController.abort();
+        streamAbortController = null;
       }
+
+      // 释放之前的 blob url
+      if (currentStreamBlobUrl) {
+        URL.revokeObjectURL(currentStreamBlobUrl);
+        currentStreamBlobUrl = null;
+      }
+
+      // 清空 normal wrapper 子元素，放回占位符
+      normalWrapper.innerHTML = `
+        <div class="placeholder-text" id="normalPlaceholder">
+          <span>🖼️</span>
+          等待加载
+        </div>
+      `;
+
+      streamWrapper.innerHTML = `
+        <div class="placeholder-text" id="streamPlaceholder">
+          <span>📡</span>
+          等待流
+        </div>
+      `;
+
+      // 重置文本
+      normalTimeEl.textContent = '—';
+      streamTimeEl.textContent = '—';
+      normalBytesEl.textContent = '0 KB';
+      streamBytesEl.textContent = '0 KB';
+      streamProgress.style.width = '0%';
+
+      setStatus(normalStatusEl, '空闲', 'idle');
+      setStatus(streamStatusEl, '空闲', 'idle');
+
+      normalImageElement = null;
+      streamImageElement = null;
+      isRunning = false;
+
+      // 启用开始按钮（如果之前因加载被禁用）
+      startBtn.disabled = false;
+
+      // 重置cache buster
+      currentCacheBuster = Date.now();
+    }
+
+    // ---------- 普通加载 ----------
+    function startNormalLoad(cacheBuster) {
+      return new Promise((resolve) => {
+        // 重置状态
+        if (normalImageElement) {
+          normalImageElement.remove();
+          normalImageElement = null;
+        }
+
+        // 清除placeholder
+        const placeholder = normalWrapper.querySelector('.placeholder-text');
+        if (placeholder) placeholder.remove();
+
+        // 更新状态
+        setStatus(normalStatusEl, '加载中…', 'loading');
+        normalBytesEl.textContent = '0 KB';
+        normalTimeEl.textContent = '—';
+
+        const startTime = performance.now();
+        normalStartTime = startTime;
+
+        // 创建img
+        const img = new Image();
+        normalImageElement = img;
+
+        // 为了显示字节，我们可以使用 fetch 来获取大小？但是普通加载就是img，没有进度事件。
+        // 可以用 PerformanceObserver 或者不管字节。为了演示，我们显示 — 或者假装通过 fetch 获取大小？
+        // 也可以再发一个 HEAD 请求获取大小，但是为了简单，显示 "等待完成" 或者基于content-length。
+        // 使用 fetch 查询 content-length 不是必须的，为了有数字，这里可以用 performance.getEntriesByName 来获取 transferSize? 
+        // 更简单：先用一个 fetch HEAD 拿 content-length 显示，但不影响加载。
+        // 但是为了干净，普通加载不显示字节，但我们的 UI 有字节显示，所以可以用一个占位 "-"
+        normalBytesEl.textContent = '—'; // 稍后更新
+
+        // 获取文件大小（HEAD 请求，不阻塞图片显示）
+        fetch(IMAGE_URL + '?cb=' + cacheBuster, { method: 'HEAD' })
+          .then(res => {
+            const size = res.headers.get('content-length');
+            if (size && !isNaN(parseInt(size))) {
+              normalBytesEl.textContent = formatBytes(parseInt(size));
+            } else {
+              normalBytesEl.textContent = '未知';
+            }
+          })
+          .catch(() => {
+            normalBytesEl.textContent = '—';
+          });
+
+        img.onload = () => {
+          const endTime = performance.now();
+          const duration = (endTime - startTime) / 1000; // 秒
+          normalTimeEl.textContent = duration.toFixed(2) + ' s';
+          setStatus(normalStatusEl, '完成', 'done');
+
+          // 将图片添加到wrapper (保留之前可能已存在placeholder被移除)
+          // 确保wrapper里只有img
+          normalWrapper.innerHTML = '';
+          normalWrapper.appendChild(img);
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'cover';
+
+          // 如果head没有获取到bytes，这里显示完整（无精确字节，用—）
+          if (normalBytesEl.textContent === '—' || normalBytesEl.textContent === '未知') {
+            // 不覆盖已知的大小
+          }
+          resolve();
+        };
+
+        img.onerror = (e) => {
+          console.error('普通加载失败', e);
+          setStatus(normalStatusEl, '失败', 'idle');
+          normalTimeEl.textContent = '—';
+          normalBytesEl.textContent = '0 KB';
+          // 显示错误占位
+          normalWrapper.innerHTML = `
+            <div class="placeholder-text">
+              <span>⚠️</span>
+              图片加载失败
+            </div>
+          `;
+          resolve();
+        };
+
+        // 启动加载
+        img.src = IMAGE_URL + '?cb=' + cacheBuster;
+      });
+    }
+
+    // ---------- 流式加载 (使用 Fetch + ReadableStream) ----------
+    async function startStreamLoad(cacheBuster) {
+      // 中止之前的流
+      if (streamAbortController) {
+        streamAbortController.abort();
+        streamAbortController = null;
+      }
+
+      // 释放之前的 blob url
+      if (currentStreamBlobUrl) {
+        URL.revokeObjectURL(currentStreamBlobUrl);
+        currentStreamBlobUrl = null;
+      }
+
+      // 重置stream UI
+      streamWrapper.innerHTML = `
+        <div class="placeholder-text" id="streamPlaceholder">
+          <span>📡</span>
+          连接中...
+        </div>
+      `;
+
+      streamTimeEl.textContent = '—';
+      streamBytesEl.textContent = '0 KB';
+      streamProgress.style.width = '0%';
+      setStatus(streamStatusEl, '连接中…', 'loading');
+
+      const abortController = new AbortController();
+      streamAbortController = abortController;
+
+      const startTime = performance.now();
+      streamStartTime = startTime;
+
+      try {
+        // 注意：加 cache buster 防止缓存，保证真实流式
+        const url = IMAGE_URL + '?cb=' + cacheBuster;
+        const response = await fetch(url, { signal: abortController.signal });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        // 获取总大小（如果有 content-length）
+        const contentLength = response.headers.get('content-length');
+        const totalBytes = contentLength ? parseInt(contentLength, 10) : null;
+
+        // 获取读取器
+        const reader = response.body.getReader();
+        let receivedBytes = 0;
+        const chunks = [];
+
+        // 移除占位，准备显示图片（但此时还没有图片，用一个img元素）
+        streamWrapper.innerHTML = ''; // 清空
+        const img = document.createElement('img');
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        // 初始设置一个极小的透明占位，或者等待第一块数据
+        // 但我们可以放一个透明的1x1 gif，或者先不放src，等有数据时再设置
+        // 为了让用户看到渐进效果，我们放一个空白，等有数据再替换。
+        // 更佳：先把img挂载，src留空，当收到第一块数据时就创建blob url显示部分内容？但部分图片可能无法解码。
+        // 实际上，流式加载图片最自然的方式是使用 srcObject = MediaSource ? 但图片不支持 MediaSource。
+        // 另一种做法是使用 createImageBitmap + canvas 渐进绘制，但复杂。
+        // 这里为了演示“流式”感，我们采用拼接 Blob 并更新 img.src 的方式：
+        // 每次收到 chunk 就重新生成 blob 并更新 img.src，浏览器会不断重新解码，但旧图片还在显示，新图片会渐进覆盖。
+        // 这能展示出图片一块一块出现的效果。
+        // 但注意这样会重复解码，性能开销大，但作为演示足够了。
+        // 另一种更高效的是使用 createImageBitmap 逐步绘制到canvas，但为了代码简洁，我们使用blob+img。
+        // 不过为了更平滑，使用 blob 每次更新 img.src 也会导致闪烁，但是视觉上能看出逐步加载。
+        // 为了减少闪烁，可以使用 canvas 绘制。但考虑到简洁性，且很多演示都使用这种 blob 更新方式。
+        // 这里我们就用这种方式：累积 chunks，转为 blob，设置 img.src。
+        // 为了不让旧图片消失，我们保留之前的 img 直到新的 blob 准备好。
+        // 但我们会替换 src，所以会闪烁。不过我们可以保留两个 img 做交替？太复杂了。
+        // 为了让效果可见，我们就采用更新 src 的方式，每次收到数据都更新。浏览器会很快切换。
+
+        // 但更好的体验：使用 canvas + createImageBitmap 逐步绘制。但是需要处理流式解码比较麻烦。
+        // 考虑到这是一个性能对比演示，我们采用更简单直接的“每次更新blobUrl”策略。
+        // 并且会在第一次收到数据时移除占位。
+
+        let placeholderRemoved = false;
+        let imageElement = null;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          receivedBytes += value.length;
+          chunks.push(value);
+
+          // 更新字节数
+          streamBytesEl.textContent = formatBytes(receivedBytes);
+
+          // 如果有总长度，更新进度条
+          if (totalBytes) {
+            const percent = Math.min(100, (receivedBytes / totalBytes) * 100);
+            streamProgress.style.width = percent + '%';
+          } else {
+            // 没有content-length时进度条显示不确定，我们粗略显示已接收字节比例（基于预期大小估算）
+            // 这里就不更新进度条或者显示动画
+          }
+
+          // 从chunks创建blob
+          const blob = new Blob(chunks, { type: 'image/jpeg' }); // 假定为jpeg，但图片可能是png？picsum返回jpeg
+          // 使用picsum一般返回jpeg
+
+          // 释放之前的blob url
+          if (currentStreamBlobUrl) {
+            URL.revokeObjectURL(currentStreamBlobUrl);
+          }
+          const newBlobUrl = URL.createObjectURL(blob);
+          currentStreamBlobUrl = newBlobUrl;
+
+          if (!placeholderRemoved) {
+            // 移除占位符
+            streamWrapper.innerHTML = '';
+            // 创建img
+            imageElement = document.createElement('img');
+            imageElement.style.width = '100%';
+            imageElement.style.height = '100%';
+            imageElement.style.objectFit = 'cover';
+            imageElement.src = newBlobUrl;
+            streamWrapper.appendChild(imageElement);
+            streamImageElement = imageElement;
+            placeholderRemoved = true;
+          } else {
+            // 更新现有图片的src
+            if (streamImageElement) {
+              streamImageElement.src = newBlobUrl;
+            } else {
+              // 如果不存在则创建
+              imageElement = document.createElement('img');
+              imageElement.style.width = '100%';
+              imageElement.style.height = '100%';
+              imageElement.style.objectFit = 'cover';
+              imageElement.src = newBlobUrl;
+              streamWrapper.appendChild(imageElement);
+              streamImageElement = imageElement;
+            }
+          }
+
+          // 短暂等待，让渲染有机会执行？但不需要，因为DOM更新是异步的，这个循环很密集。
+          // 为了视觉上能看到一步步加载，可以加一点延迟？但是那会降低性能对比的意义。
+          // 不加延迟，浏览器会尽可能快地渲染。
+        }
+
+        // 流结束，最后确保图片完整
+        if (!placeholderRemoved) {
+          // 没有收到任何数据？可能是空响应
+          streamWrapper.innerHTML = `
+            <div class="placeholder-text">
+              <span>⚠️</span>
+              无数据
+            </div>
+          `;
+        }
+
+        const endTime = performance.now();
+        const duration = (endTime - streamStartTime) / 1000;
+        streamTimeEl.textContent = duration.toFixed(2) + ' s';
+        setStatus(streamStatusEl, '完成', 'done');
+        streamProgress.style.width = '100%';
+
+        // 更新最终字节
+        streamBytesEl.textContent = formatBytes(receivedBytes);
+
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('流式加载被中止');
+          // 重置UI，但不要覆盖为失败
+          return;
+        }
+        console.error('流式加载错误:', err);
+        setStatus(streamStatusEl, '失败', 'idle');
+        streamTimeEl.textContent = '—';
+        streamWrapper.innerHTML = `
+          <div class="placeholder-text">
+            <span>⚠️</span>
+            流加载失败
+          </div>
+        `;
+      } finally {
+        if (streamAbortController === abortController) {
+          streamAbortController = null;
+        }
+      }
+    }
+
+    // ---------- 运行对比 ----------
+    async function runComparison() {
+      if (isRunning) return;
+      isRunning = true;
+      startBtn.disabled = true;
+
+      // 每次对比使用新的 cache buster，保证两者都重新下载，且互不影响缓存
+      // 但为了公平，让普通和流式使用相同的cache buster? 也可以，但可能共享缓存？不会，因为加载时间不同步。
+      // 但由于同时发起，可能普通加载因为缓存返回更快？使用不同的cb确保都是从网络加载，更公平。
+      // 但为了对比公平，需要让它们下载同样的资源。我们使用不同的cb值，但资源内容相同。
+      const normalCb = Date.now();
+      const streamCb = normalCb + 100; // 不同，但内容相同
+
+      // 重置UI但不重置cache buster
+      resetView();
+      // 重置后isRunning被重置为false，手动设为true
+      isRunning = true;
+      startBtn.disabled = true;
+
+      // 重新设置cache buster随机，避免缓存
+      // 但resetView里已经把cacheBuster重置为Date.now了，我们用新的
+      const freshCb = Date.now();
+      const normalCbFinal = freshCb;
+      const streamCbFinal = freshCb + 1;
+
+      // 重新更新UI状态
+      setStatus(normalStatusEl, '等待', 'idle');
+      setStatus(streamStatusEl, '等待', 'idle');
+
+      // 并行启动
+      const normalPromise = startNormalLoad(normalCbFinal);
+      const streamPromise = startStreamLoad(streamCbFinal);
+
+      // 等待两者完成，但不需要 await 顺序，他们各自更新UI
+      await Promise.all([normalPromise, streamPromise]);
+
+      isRunning = false;
+      startBtn.disabled = false;
+    }
+
+    // ---------- 事件绑定 ----------
+    startBtn.addEventListener('click', () => {
+      runComparison();
     });
 
-  } catch (err) {
-    log(`❌ 引擎创建失败: ${err.message || err}`, "error");
-    log(`错误详情: ${JSON.stringify(err, null, 2)}`, "error");
-    outEl.textContent = `加载失败: ${err.message || err}`;
-  }
-}
+    resetBtn.addEventListener('click', () => {
+      // 中止任何进行中的加载
+      if (streamAbortController) {
+        streamAbortController.abort();
+        streamAbortController = null;
+      }
+      // 释放blob
+      if (currentStreamBlobUrl) {
+        URL.revokeObjectURL(currentStreamBlobUrl);
+        currentStreamBlobUrl = null;
+      }
+      resetView();
+      isRunning = false;
+      startBtn.disabled = false;
+    });
 
-document.getElementById("btnClear").addEventListener("click", () => {
-  logEl.innerHTML = "";
-});
+    // 初始化视图
+    resetView();
 
-init();
+    // 可选：页面加载后自动开始？不自动，让用户点击。
+
+    // 注意：如果用户快速多次点击开始，可能会重叠。使用isRunning标志防止。
+  })();
 </script>
 </body>
 </html>
